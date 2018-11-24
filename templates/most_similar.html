@@ -1,0 +1,16 @@
+{% if status == False %}
+    {{message}}
+{% else %}
+	<div style="height:300px; overflow-y: scroll;">
+		<table class="table table-bordered">
+			<tbody>
+				{% for x in message %}
+					<tr>
+						<td>{{x.0}} </td>
+						<td>{{x.1}}</td>
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+{% endif %}

@@ -1,0 +1,407 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Gensim Word2vec with Django</title>
+	<link rel="stylesheet" type="text/css" href="{% static "css/bootstrap.min.css" %}">
+</head>
+<body>
+	<div class="container">
+		
+		{% if messages %}
+		    {% for message in messages %}
+		            <div class="alert alert-dismissible {% if message.tags %}alert-{% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}danger{% else %}{{ message.tags }}{% endif %}{% endif %}" role="alert">
+		            	{{ message }}
+		            	<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+				    		<span aria-hidden="true">&times;</span>
+				  		</button>
+		            </div>
+		    {% endfor %}
+		{% endif %}
+
+		<div style="margin-top:20px;">
+			<ul class="nav nav-tabs" id="myTab" role="tablist">
+			  <li class="nav-item">
+			    <a class="nav-link active" id="home-tab" data-toggle="tab" href="#use" role="tab" aria-controls="use" aria-selected="true">Use Pretrained Model</a>
+			  </li>
+			  <li class="nav-item">
+			    <a class="nav-link" id="profile-tab" data-toggle="tab" href="#training" role="tab" aria-controls="training" aria-selected="false">Train New Model</a>
+			  </li>
+			</ul>
+			<div class="tab-content border-right border-left border-bottom" id="myTabContent" style="padding:10px;">
+			  <div class="tab-pane fade show active" id="use" role="tabpanel" aria-labelledby="use-tab">
+			  		<div class="row" style="margin-top:30px;">
+			  			<div class="col-md-12">
+					  		<div>
+							 	<div class="form-group row">
+								    <label for="model_path" class="col-md-2 col-form-label">Model Path</label>
+								    <div class="col-md-10">
+								      <input type="text" class="form-control" id="model_path" placeholder="Model Path">
+								    </div>
+							  	</div>
+							  	<div class="row" style="margin-bottom:10px;">
+									<div class="offset-md-2 col-md-10" id="model_path_message">
+										
+									</div>
+								</div>
+								<div class="row">
+									<div class="offset-md-2 col-md-5">
+										<button class="btn btn-primary" id="btn_submit_model_path">Submit</button>
+									</div>
+								</div>	
+							</div>
+						</div>
+					</div>
+
+					<hr>
+
+					<!-- Most Similar -->
+					<div class="row" style="margin-top:30px; padding:10px;">
+						<div class="col-md-12"><h3>Most Similar Words</h3></div>
+						<div class="col-md-12">
+						 	<div class="form-group row">
+							    <label for="most_similar_word" class="col-md-2 col-form-label">Word</label>
+							    <div class="col-md-5">
+							      <input type="text" class="form-control" id="most_similar_word">
+							    </div>
+						  	</div>
+						  	<div class="form-group row">
+							    <label for="most_similar_topn" class="col-md-2 col-form-label">Top N</label>
+							    <div class="col-md-2">
+							      <input type="number" class="form-control" id="most_similar_topn" min="1" value="10">
+							    </div>
+						  	</div>
+							<div class="row">
+								<div class="offset-md-2 col-md-5">
+									<button class="btn btn-primary" id="btn_submit_most_similar">Submit</button>
+								</div>
+							</div>
+							<div class="row" style="margin-top:20px;">
+								<div class="col-md-6" id="most_similar_result">
+								</div>
+							</div>	
+						</div>
+					</div>
+
+					<hr>
+
+					<!-- Similarity -->
+					<div class="row" style="margin-top:30px; padding:10px;">
+						<div class="col-md-12"><h3>Similarity</h3></div>
+						<div class="col-md-12">
+						 	<div class="form-group row">
+							    <label for="similarity_word1" class="col-md-2 col-form-label">Word 1</label>
+							    <div class="col-md-5">
+							      <input type="text" class="form-control" id="similarity_word1">
+							    </div>
+						  	</div>
+						  	<div class="form-group row">
+							    <label for="similarity_word2" class="col-md-2 col-form-label">Word 2</label>
+							    <div class="col-md-5">
+							      <input type="text" class="form-control" id="similarity_word2">
+							    </div>
+						  	</div>
+							<div class="row">
+								<div class="offset-md-2 col-md-5">
+									<button class="btn btn-primary" id="btn_submit_similarity">Submit</button>
+								</div>
+							</div>
+							<div class="row" style="margin-top:20px;">
+								<div class="col-md-6" id="similarity_result">
+								</div>
+							</div>	
+						</div>
+					</div>
+
+					<hr>
+
+					<!-- Word doesn't match -->
+					<div class="row" style="margin-top:30px; padding:10px;">
+						<div class="col-md-12"><h3>Word doesn't Match</h3></div>
+						<div class="col-md-12">
+						 	<div class="form-group row">
+							    <label for="word_list" class="col-md-2 col-form-label">Word List</label>
+							    <div class="col-md-5">
+							      <input type="text" class="form-control" id="word_list">
+							      <small class="text-muted">Space delimited, e.g. cat dog france </small>
+							    </div>
+						  	</div>
+							<div class="row">
+								<div class="offset-md-2 col-md-5">
+									<button class="btn btn-primary" id="btn_submit_dmatch">Submit</button>
+								</div>
+							</div>
+							<div class="row" style="margin-top:20px;">
+								<div class="col-md-6" id="dmatch_result">
+								</div>
+							</div>	
+						</div>
+					</div>
+
+					<hr>
+
+					<!-- Analogy -->
+					<div class="row" style="margin-top:30px; padding:10px;">
+						<div class="col-md-12"><h3>Analogy</h3></div>
+						<div class="col-md-12">
+						 	<div class="form-group row">
+							    <label for="arg1" class="col-md-1 col-form-label">Argument</label>
+							    <div class="col-md-2">
+							      <input type="text" class="form-control" id="arg1">
+							    </div>
+							    <div class="col-md-1" style="text-align:center;">
+							      <h4> : </h4>
+							    </div>
+							    <div class="col-md-2">
+							      <input type="text" class="form-control" id="arg2">
+							    </div>
+							    <div class="col-md-1" style="text-align:center;">
+							      <h4> = </h4>
+							    </div>
+							    <div class="col-md-2">
+							      <input type="text" class="form-control" id="arg3">
+							    </div>
+							    <div class="col-md-1" style="text-align:center;">
+							      <h4> : </h4>
+							    </div>
+							    <div class="col-md-1" style="text-align:center;">
+							      <h3> ? </h3>
+							    </div>
+						  	</div>
+						  	<div class="form-group row">
+							    <label for="analogy_topn" class="col-md-1 col-form-label">Top N</label>
+							    <div class="col-md-2">
+							      <input type="number" class="form-control" id="analogy_topn" min="1" value="1">
+							    </div>
+						  	</div>
+							<div class="row">
+								<div class="offset-md-1 col-md-5">
+									<button class="btn btn-primary" id="btn_submit_analogy">Submit</button>
+								</div>
+							</div>
+							<div class="row" style="margin-top:20px;">
+								<div class="col-md-6" id="analogy_result">
+								</div>
+							</div>	
+						</div>
+					</div>
+			  </div>
+			  <div class="tab-pane fade" id="training" role="tabpanel" aria-labelledby="training-tab">
+			  		<div class="row" style="margin-top:30px;">
+			  			<div class="col-md-12">
+					  		<form method="POST" action="{% url 'submit_training' %}">
+					  			{% csrf_token %}
+							 	<div class="form-group row">
+								    <label for="dataset_path" class="col-md-2 col-form-label">Dataset Path</label>
+								    <div class="col-md-10">
+								      <input type="text" class="form-control" id="dataset_path" name="dataset_path" placeholder="Dataset Path">
+								    </div>
+							  	</div>
+							  	<hr>
+							  	<h4>Training Params</h4>
+							  	<div class="form-group row">
+								    <label for="size" class="col-md-2 col-form-label">Size</label>
+								    <div class="col-md-2">
+								      <input type="number" class="form-control" id="size" name="size" min="1" value="150" >
+								    </div>
+							  	</div>
+							  	<div class="form-group row">
+								    <label for="window" class="col-md-2 col-form-label">Window</label>
+								    <div class="col-md-2">
+								      <input type="number" class="form-control" id="window" name="window" min="1" value="10" >
+								    </div>
+							  	</div>
+							  	<div class="form-group row">
+								    <label for="min_count" class="col-md-2 col-form-label">Min Count</label>
+								    <div class="col-md-2">
+								      <input type="number" class="form-control" id="min_count" name="min_count" min="1" value="2" >
+								    </div>
+							  	</div>
+							  	<div class="form-group row">
+								    <label for="epoch" class="col-md-2 col-form-label">Epoch</label>
+								    <div class="col-md-2">
+								      <input type="number" class="form-control" id="epoch" name="epoch" min="1" value="10" >
+								    </div>
+							  	</div>
+							  	<hr>
+							  	<div class="form-group row">
+								    <label for="save_model_path" class="col-md-2 col-form-label">Save Model Path</label>
+								    <div class="col-md-10">
+								      <input type="text" class="form-control" id="save_model_path" name="save_model_path" placeholder="Save Model Path">
+								    </div>
+							  	</div>
+							  	<div class="row" style="text-align:center;margin-top:10px;">
+							  		<div class="col-md-12"><button class="btn btn-primary" type="submit">Submit</button></div>
+							  	</div>
+							</form>
+						</div>
+					</div>
+			  </div>
+			</div>
+		</div>
+
+		<div class="modal fade" data-backdrop="static" data-keyboard="false" tabindex="-1" role="dialog" aria-hidden="true" style="padding-top:15%; overflow-y:visible;" id="pleaseWaitDialog"> 
+			<div class="modal-dialog modal-m"> 
+				<div class="modal-content">
+					<div class="modal-header"><h3 style="margin:0;">Please Wait</h3></div>
+				<div class="modal-body">
+					<div class="progress">
+					  <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
+					</div>
+				</div> 
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script type="text/javascript" src="{% static "js/jquery-3.3.1.min.js" %}"></script>
+	<script type="text/javascript" src="{% static "js/popper.min.js" %}"></script>
+	<script type="text/javascript" src="{% static "js/bootstrap.min.js" %}"></script>
+	<script type="text/javascript">
+		var stat = false;
+
+		$('#btn_submit_model_path').click(function() {
+			if ($(this).text() == "Submit") {
+				$('#pleaseWaitDialog').modal();
+				$.ajax({
+					type : "POST",
+					url: "{% url 'submit_model_path' %}",
+					data : {
+						'csrfmiddlewaretoken': '{{ csrf_token }}',
+						'path' : $('#model_path').val()
+					},
+					success: function(result){
+						$('#pleaseWaitDialog').modal('hide');
+						$( ".alert1" ).remove();
+			        	if(result.status) {
+			        		stat = true;
+			        		$('#model_path_message').append(
+			        			'<div class="alert1" style="color:green"><b>' + result.message +'</b></div>'
+			        		);
+			        		$('#model_path').prop('readonly', true);
+			        		$('#btn_submit_model_path').text("Change Path")
+			        	}
+			        	else {
+			        		stat = false;
+							$('#model_path_message').append(
+			        			'<div class="alert1" style="color:red"><b>' + result.message +'</b></div>'
+			        		);
+			        	}
+			    	}
+				});
+			}
+			else {
+				$( ".alert1" ).remove();
+				$('#model_path').prop('readonly', false);
+			    $('#btn_submit_model_path').text("Submit")
+			}
+		});
+
+		$('#btn_submit_most_similar').click(function() {
+			//console.log(stat);
+			if (stat==true) {
+				$('#most_similar_result').html('');
+				$('#pleaseWaitDialog').modal();
+				$.ajax({
+						type : "POST",
+						url: "{% url 'submit_most_similar' %}",
+						data : {
+							'csrfmiddlewaretoken': '{{ csrf_token }}',
+							'path' : $('#model_path').val(),
+							'word' : $('#most_similar_word').val().toLowerCase(),
+							'topn' : $('#most_similar_topn').val()
+						},
+						success: function(result){
+							//console.log(result);
+							$('#pleaseWaitDialog').modal('hide');
+							$('#most_similar_result').html(result)
+				    	}
+				});
+			}
+			else {
+				alert("Please provide Model Path");
+			}
+		});
+
+		$('#btn_submit_similarity').click(function() {
+			//console.log(stat);
+			if (stat==true) {
+				$('#similarity_result').html('');
+				$('#pleaseWaitDialog').modal();
+				$.ajax({
+						type : "POST",
+						url: "{% url 'submit_similarity' %}",
+						data : {
+							'csrfmiddlewaretoken': '{{ csrf_token }}',
+							'path' : $('#model_path').val(),
+							'word1' : $('#similarity_word1').val().toLowerCase(),
+							'word2' : $('#similarity_word2').val().toLowerCase(),
+						},
+						success: function(result){
+							//console.log(result);
+							$('#pleaseWaitDialog').modal('hide');
+							$('#similarity_result').html(result)
+				    	}
+				});
+			}
+			else {
+				alert("Please provide Model Path");
+			}
+		});
+
+		$('#btn_submit_dmatch').click(function() {
+			//console.log(stat);
+			if (stat==true) {
+				$('#dmatch_result').html('');
+				$('#pleaseWaitDialog').modal();
+				$.ajax({
+						type : "POST",
+						url: "{% url 'submit_dmatch' %}",
+						data : {
+							'csrfmiddlewaretoken': '{{ csrf_token }}',
+							'path' : $('#model_path').val(),
+							'word_list' : $('#word_list').val().toLowerCase()
+						},
+						success: function(result){
+							//console.log(result);
+							$('#pleaseWaitDialog').modal('hide');
+							$('#dmatch_result').html(result)
+				    	}
+				});
+			}
+			else {
+				alert("Please provide Model Path");
+			}
+		});
+
+		$('#btn_submit_analogy').click(function() {
+			//console.log(stat);
+			if (stat==true) {
+				$('#analogy_result').html('');
+				$('#pleaseWaitDialog').modal();
+				$.ajax({
+						type : "POST",
+						url: "{% url 'submit_analogy' %}",
+						data : {
+							'csrfmiddlewaretoken': '{{ csrf_token }}',
+							'path' : $('#model_path').val(),
+							'arg1' : $('#arg1').val().toLowerCase(),
+							'arg2' : $('#arg2').val().toLowerCase(),
+							'arg3' : $('#arg3').val().toLowerCase(),
+							'topn' : $('#analogy_topn').val()
+						},
+						success: function(result){
+							//console.log(result);
+							$('#pleaseWaitDialog').modal('hide');
+							$('#analogy_result').html(result)
+				    	}
+				});
+			}
+			else {
+				alert("Please provide Model Path");
+			}
+		});
+	</script>
+</body>
+</html>
